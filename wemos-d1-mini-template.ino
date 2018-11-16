@@ -14,9 +14,9 @@ const char compile_date[] = __DATE__ " " __TIME__;
 //#define WIFI_SSID "" //enter your WIFI SSID
 //#define WIFI_PASSWORD "" //enter your WIFI Password
 //#define MQTT_SERVER "" // Enter your MQTT server address or IP.
-//#define MQTT_DEVICE "" // Enter your MQTT device
 //#define MQTT_USER "" //enter your MQTT username
 //#define MQTT_PASSWORD "" //enter your password
+#define MQTT_DEVICE "template-device" // Enter your MQTT device
 #define MQTT_PORT 1883 // Enter your MQTT server port.
 #define MQTT_SOCKET_TIMEOUT 120
 #define FW_UPDATE_INTERVAL_SEC 24*3600
