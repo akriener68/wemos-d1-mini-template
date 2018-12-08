@@ -72,7 +72,7 @@ void loop() {
  
 void setup_wifi() {
   int count = 0;
-  delay(50);
+  my_delay(50);
 
   Serial.println();
   Serial.print("Connecting to ");
@@ -83,7 +83,7 @@ void setup_wifi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
-    delay(250);
+    my_delay(250);
     Serial.print(".");
     count++;
     if(count > 50) {
@@ -114,7 +114,7 @@ void reconnect() {
     Serial.print(client.state());
     Serial.println(" try again in 5 seconds");
     // Wait 5 seconds before retrying
-    delay(5000);
+    my_delay(5000);
   }
 }
 
@@ -193,3 +193,16 @@ void checkForUpdates() {
     Serial.println(httpCode);
   }
 }
+
+void my_delay(unsigned long ms) {
+  uint32_t start = micros();
+
+  while (ms > 0) {
+    yield();
+    while ( ms > 0 && (micros() - start) >= 1000) {
+      ms--;
+      start += 1000;
+    }
+  }
+}
+
