@@ -21,13 +21,15 @@ const char compile_date[] = __DATE__ " " __TIME__;
 #define MQTT_SOCKET_TIMEOUT 120
 #define FW_UPDATE_INTERVAL_SEC 24*3600
 #define WATCHDOG_UPDATE_INTERVAL_SEC 1
-#define WATCHDOG_RESET_INTERVAL_SEC 30
+#define WATCHDOG_RESET_INTERVAL_SEC 120
 #define UPDATE_SERVER "http://192.168.100.15/firmware/"
 #define FIRMWARE_VERSION "-1.0"
 
 /****************************** MQTT TOPICS (change these topics as you wish)  ***************************************/
-#define MQTT_VERSION_PUB "sensor/garage-double/version"
-#define MQTT_COMPILE_PUB "sensor/garage-double/compile"
+#define MQTT_VERSION_PUB "sensor/xxx/version"
+#define MQTT_COMPILE_PUB "sensor/xxx/compile"
+#define MQTT_HEARTBEAT_SUB "heartbeat/#"
+#define MQTT_HEARTBEAT_TOPIC "heartbeat"
 
 volatile int watchDogCount = 0;
 
@@ -47,6 +49,7 @@ void setup() {
   setup_wifi();
 
   client.setServer(MQTT_SERVER, MQTT_PORT); //1883 is the port number you have forwared for mqtt messages. You will need to change this if you've used a different port 
+  client.setCallback(callback); //callback is the function that gets called for a topic sub
 
   ticker_fw.attach_ms(FW_UPDATE_INTERVAL_SEC * 1000, fwTicker);
   ticker_watchdog.attach_ms(WATCHDOG_UPDATE_INTERVAL_SEC * 1000, watchdogTicker);
@@ -67,7 +70,16 @@ void loop() {
   }
 
   client.loop(); //the mqtt function that processes MQTT messages
-  watchDogCount = 0;
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  String strTopic;
+  //if the 'garage/button' topic has a payload "OPEN", then 'click' the relay
+  payload[length] = '\0';
+  strTopic = String((char*)topic);
+  if (strTopic == MQTT_HEARTBEAT_TOPIC) {
+    watchDogCount = 0;
+  }
 }
  
 void setup_wifi() {
@@ -105,6 +117,7 @@ void reconnect() {
   Serial.print("Attempting MQTT connection...");
   if (client.connect(MQTT_DEVICE, MQTT_USER, MQTT_PASSWORD)) {
     Serial.println("connected");
+    client.subscribe(MQTT_HEARTBEAT_SUB);
     String firmwareVer = String("Firmware Version: ") + String(FIRMWARE_VERSION);
     String compileDate = String("Build Date: ") + String(compile_date);
     client.publish(MQTT_VERSION_PUB, firmwareVer.c_str(), true);
@@ -205,4 +218,3 @@ void my_delay(unsigned long ms) {
     }
   }
 }
-
