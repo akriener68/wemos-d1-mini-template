@@ -16,12 +16,10 @@ const char compile_date[] = __DATE__ " " __TIME__;
 //#define MQTT_SERVER "" // Enter your MQTT server address or IP.
 //#define MQTT_USER "" //enter your MQTT username
 //#define MQTT_PASSWORD "" //enter your password
-#define MQTT_DEVICE "template-device" // Enter your MQTT device
+#define MQTT_DEVICE "watchdog-test" // Enter your MQTT device
 #define MQTT_PORT 1883 // Enter your MQTT server port.
 #define MQTT_SOCKET_TIMEOUT 120
 #define FW_UPDATE_INTERVAL_SEC 24*3600
-#define WATCHDOG_UPDATE_INTERVAL_SEC 1
-#define WATCHDOG_RESET_INTERVAL_SEC 120
 #define UPDATE_SERVER "http://192.168.100.15/firmware/"
 #define FIRMWARE_VERSION "-1.0"
 
@@ -31,9 +29,9 @@ const char compile_date[] = __DATE__ " " __TIME__;
 #define MQTT_HEARTBEAT_SUB "heartbeat/#"
 #define MQTT_HEARTBEAT_TOPIC "heartbeat"
 
-volatile int watchDogCount = 0;
+#define WATCHDOG_PIN 5  //  D1
 
-Ticker ticker_fw, ticker_watchdog;
+Ticker ticker_fw;
 
 bool readyForFwUpdate = false;
 
@@ -46,16 +44,20 @@ void setup() {
  
   Serial.begin(115200);
 
+  pinMode(WATCHDOG_PIN, OUTPUT); 
+
   setup_wifi();
 
   client.setServer(MQTT_SERVER, MQTT_PORT); //1883 is the port number you have forwared for mqtt messages. You will need to change this if you've used a different port 
   client.setCallback(callback); //callback is the function that gets called for a topic sub
 
   ticker_fw.attach_ms(FW_UPDATE_INTERVAL_SEC * 1000, fwTicker);
-  ticker_watchdog.attach_ms(WATCHDOG_UPDATE_INTERVAL_SEC * 1000, watchdogTicker);
 
   checkForUpdates();
+  resetWatchdog();
 }
+
+int count=0;
 
 void loop() {
   
@@ -70,6 +72,10 @@ void loop() {
   }
 
   client.loop(); //the mqtt function that processes MQTT messages
+
+  my_delay(1000);
+  count++;
+  Serial.println(count);
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -78,7 +84,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
   payload[length] = '\0';
   strTopic = String((char*)topic);
   if (strTopic == MQTT_HEARTBEAT_TOPIC) {
-    watchDogCount = 0;
+    resetWatchdog();
+    Serial.println("Heartbeat received");
   }
 }
  
@@ -98,11 +105,6 @@ void setup_wifi() {
     my_delay(250);
     Serial.print(".");
     count++;
-    if(count > 50) {
-      WiFiManager wifiManager;
-      wifiManager.resetSettings();
-      wifiManager.autoConnect();
-    }
   }
 
   Serial.println("");
@@ -136,14 +138,6 @@ void fwTicker() {
   readyForFwUpdate = true;
 }
 
-// Watchdog update ticker
-void watchdogTicker() {
-  watchDogCount++;
-  if(watchDogCount >= WATCHDOG_RESET_INTERVAL_SEC) {
-    Serial.println("Reset system");
-    ESP.restart();  
-  }
-}
 
 String WiFi_macAddressOf(IPAddress aIp) {
   if (aIp == WiFi.localIP())
@@ -217,4 +211,10 @@ void my_delay(unsigned long ms) {
       start += 1000;
     }
   }
+}
+
+void resetWatchdog() {
+  digitalWrite(WATCHDOG_PIN, HIGH);
+  my_delay(20);
+  digitalWrite(WATCHDOG_PIN, LOW);
 }
