@@ -8,7 +8,7 @@ const char compile_date[] = __DATE__ " " __TIME__;
 //#define MQTT_USER "" //enter your MQTT username
 //#define MQTT_PASSWORD "" //enter your password
 #define MQTT_DEVICE "watchdog-test" // Enter your MQTT device
-#define MQTT_PORT 1883 // Enter your MQTT server port.
+#define MQTT_PORT 8883 // Enter your MQTT server port.
 #define MQTT_SOCKET_TIMEOUT 120
 #define FW_UPDATE_INTERVAL_SEC 24*3600
 #define UPDATE_SERVER "http://192.168.100.15/firmware/"
