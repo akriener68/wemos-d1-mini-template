@@ -8,6 +8,7 @@ const char compile_date[] = __DATE__ " " __TIME__;
 //#define MQTT_USER "" //enter your MQTT username
 //#define MQTT_PASSWORD "" //enter your password
 #define MQTT_DEVICE "watchdog-test" // Enter your MQTT device
+#define MQTT_DEVICE_NAME "Watchdog Test"
 #define MQTT_PORT 8883 // Enter your MQTT server port.
 #define MQTT_SOCKET_TIMEOUT 120
 #define FW_UPDATE_INTERVAL_SEC 24*3600
@@ -15,11 +16,11 @@ const char compile_date[] = __DATE__ " " __TIME__;
 #define FIRMWARE_VERSION "-1.0"
 
 /****************************** MQTT TOPICS (change these topics as you wish)  ***************************************/
-#define MQTT_VERSION_PUB "sensor/xxx/version"
-#define MQTT_COMPILE_PUB "sensor/xxx/compile"
 #define MQTT_HEARTBEAT_SUB "heartbeat/#"
 #define MQTT_HEARTBEAT_TOPIC "heartbeat"
-#define MQTT_HEARTBEAT_PUB "mqtt/template/heartbeat"
+#define MQTT_DISCOVERY_LIGHT_PREFIX  "homeassistant/light/"
+#define MQTT_DISCOVERY_SENSOR_PREFIX  "homeassistant/sensor/"
+#define HA_TELEMETRY                         "ha"
 
 #define WATCHDOG_PIN 5  //  D1
 
@@ -35,6 +36,7 @@ const char compile_date[] = __DATE__ " " __TIME__;
 Ticker ticker_fw;
 
 bool readyForFwUpdate = false;
+bool registered = false;
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
@@ -58,8 +60,6 @@ void setup() {
   resetWatchdog();
 }
 
-int count=0;
-
 void loop() {
   
   //If MQTT client can't connect to broker, then reconnect
@@ -74,18 +74,24 @@ void loop() {
 
   client.loop(); //the mqtt function that processes MQTT messages
 
-  my_delay(1000);
-  count++;
-  Serial.println(count);
+  if (! registered) {
+    registerTelemetry();
+    updateTelemetry("Unknown");
+    registered = true;
+  }
+
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
   String strTopic;
-  //if the 'garage/button' topic has a payload "OPEN", then 'click' the relay
-  payload[length] = '\0';
-  strTopic = String((char*)topic);
+  //convert topic to string to make it easier to work with
+  String payload;
+  for (uint8_t i = 0; i < p_length; i++) {
+    payload.concat((char)p_payload[i]);
+  }
+  strTopic = String((char*)p_topic);
   if (strTopic == MQTT_HEARTBEAT_TOPIC) {
     resetWatchdog();
-    Serial.println("Heartbeat received");
+    updateTelemetry(payload);
   }
 }
