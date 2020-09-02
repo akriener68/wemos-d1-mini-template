@@ -12,7 +12,6 @@ const char compile_date[] = __DATE__ " " __TIME__;
 #define MQTT_PORT 8883 // Enter your MQTT server port.
 #define MQTT_SOCKET_TIMEOUT 120
 #define FW_UPDATE_INTERVAL_SEC 24*3600
-#define UPDATE_SERVER "http://192.168.100.15/firmware/"
 #define FIRMWARE_VERSION "-1.0"
 
 /****************************** MQTT TOPICS (change these topics as you wish)  ***************************************/
@@ -50,6 +49,17 @@ void setup() {
   pinMode(WATCHDOG_PIN, OUTPUT); 
 
   setup_wifi();
+
+  IPAddress result;
+  int err = WiFi.hostByName(MQTT_SERVER, result) ;
+  if(err == 1){
+        Serial.print("MQTT Server IP address: ");
+        Serial.println(result);
+        MQTTServerIP = result.toString();
+  } else {
+        Serial.print("Error code: ");
+        Serial.println(err);
+  }
 
   client.setServer(MQTT_SERVER, MQTT_PORT); //1883 is the port number you have forwared for mqtt messages. You will need to change this if you've used a different port 
   client.setCallback(callback); //callback is the function that gets called for a topic sub
