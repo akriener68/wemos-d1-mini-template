@@ -17,6 +17,7 @@ const char compile_date[] = __DATE__ " " __TIME__;
 /****************************** MQTT TOPICS (change these topics as you wish)  ***************************************/
 #define MQTT_HEARTBEAT_SUB "heartbeat/#"
 #define MQTT_HEARTBEAT_TOPIC "heartbeat"
+#define MQTT_UPDATE_REQUEST "update"
 #define MQTT_DISCOVERY_LIGHT_PREFIX  "homeassistant/light/"
 #define MQTT_DISCOVERY_SENSOR_PREFIX  "homeassistant/sensor/"
 #define HA_TELEMETRY                         "ha"
@@ -99,9 +100,13 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
   for (uint8_t i = 0; i < p_length; i++) {
     payload.concat((char)p_payload[i]);
   }
+
   strTopic = String((char*)p_topic);
   if (strTopic == MQTT_HEARTBEAT_TOPIC) {
     resetWatchdog();
-    updateTelemetry(payload);
-  }
+    updateTelemetry(payload);      
+    if (payload.equals(String(MQTT_UPDATE_REQUEST))) {
+      checkForUpdates();
+    }    
+  }  
 }
